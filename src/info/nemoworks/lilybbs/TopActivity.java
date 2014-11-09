@@ -1,42 +1,78 @@
 package info.nemoworks.lilybbs;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.io.UnsupportedEncodingException;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
-
-import org.htmlparser.Parser;
-import org.htmlparser.filters.AndFilter;
-import org.htmlparser.filters.HasAttributeFilter;
-import org.htmlparser.filters.NodeClassFilter;
-import org.htmlparser.tags.LinkTag;
-import org.htmlparser.tags.TableColumn;
-import org.htmlparser.tags.TableRow;
-import org.htmlparser.tags.TableTag;
-import org.htmlparser.util.NodeList;
-import org.htmlparser.util.ParserException;
-
-import android.app.ListActivity;
-import android.os.AsyncTask;
+import android.app.Activity;
+import android.app.Fragment;
+import android.app.FragmentManager;
 import android.os.Bundle;
+import android.support.v4.widget.DrawerLayout;
+import android.util.Log;
 import android.view.Menu;
-import android.view.MenuItem;
+import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
-public class TopActivity extends ListActivity {
+public class TopActivity extends Activity {
+
+    private static final String TAG = "info.nemoworks.lilybbs";
+    
+    private String[] mTitles;
+    private DrawerLayout mDrawerLayout;
+    private ListView mDrawerList;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.activity_top);
-		new DownloadTask().execute("http://bbs.nju.edu.cn/bbstop10");
+		setContentView(R.layout.activity_main);
+		
+        mTitles = getResources().getStringArray(R.array.titles_array);
+        mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
+        mDrawerList = (ListView) findViewById(R.id.left_drawer);
+
+        // Set the adapter for the list view
+        mDrawerList.setAdapter(new ArrayAdapter<String>(this,
+                android.R.layout.simple_list_item_activated_1,
+                android.R.id.text1, mTitles));
+        // Set the list's click listener
+        mDrawerList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view,
+                    int position, long id) {
+                selectItem(position);
+            }
+        });
+        selectItem(0);//Top10 as default
 	}
+
+    private void selectItem(int position) {
+        Fragment fragment = new ContentFragment();
+        int type;
+        Log.i(TAG, "position = " + position);
+
+        switch(position){
+        case 1:
+            type = 1;
+            break;
+        default:
+            type = 0;
+        }
+        
+        Log.i(TAG, "type = " + type);
+        Bundle args = new Bundle();
+        args.putInt("FETCH_TYPE", type);
+        fragment.setArguments(args);
+
+        // Insert the fragment by replacing any existing fragment
+        FragmentManager fragmentManager = getFragmentManager();
+        fragmentManager.beginTransaction()
+                       .replace(R.id.content_frame, fragment)
+                       .commit();
+    
+        // Highlight the selected item, update the title, and close the drawer
+        mDrawerList.setItemChecked(position, true);
+        setTitle(mTitles[position]);
+        mDrawerLayout.closeDrawer(mDrawerList);
+    }
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
@@ -45,155 +81,4 @@ public class TopActivity extends ListActivity {
 		return true;
 	}
 
-	private class DownloadTask extends AsyncTask<String, Void, String[]> {
-
-		
-		@Override
-		protected String[] doInBackground(String... urls) {
-			try {
-				return parseTop10();
-			} catch (ParserException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			return null;
-		}
-
-		/**
-		 * Uses the logging framework to display the output of the fetch
-		 * operation in the log fragment.
-		 */
-		@Override
-		protected void onPostExecute(String[] results) {
-			// Log.i(TAG, result);
-			
-			ArrayAdapter<String> adapter = new ArrayAdapter<String>(TopActivity.this,
-			        android.R.layout.simple_list_item_1, results);
-			
-			setListAdapter(adapter);
-			
-		}
-	}
-
-	/** Initiates the fetch operation. */
-	private String loadFromNetwork(String urlString) throws IOException {
-		InputStream stream = null;
-		String str = "";
-
-		try {
-			stream = downloadUrl(urlString);
-			str = readIt(stream, 5000);
-		} finally {
-			if (stream != null) {
-				stream.close();
-			}
-		}
-		return str;
-	}
-
-	/**
-	 * Given a string representation of a URL, sets up a connection and gets an
-	 * input stream.
-	 * 
-	 * @param urlString
-	 *            A string representation of a URL.
-	 * @return An InputStream retrieved from a successful HttpURLConnection.
-	 * @throws java.io.IOException
-	 */
-	private InputStream downloadUrl(String urlString) throws IOException {
-		URL url = new URL(urlString);
-		HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-		conn.setReadTimeout(10000 /* milliseconds */);
-		conn.setConnectTimeout(15000 /* milliseconds */);
-		conn.setRequestMethod("GET");
-		conn.setDoInput(true);
-		// Start the query
-		conn.connect();
-		InputStream stream = conn.getInputStream();
-		return stream;
-	}
-
-	/**
-	 * Reads an InputStream and converts it to a String.
-	 * 
-	 * @param stream
-	 *            InputStream containing HTML from targeted site.
-	 * @param len
-	 *            Length of string that this method returns.
-	 * @return String concatenated according to len parameter.
-	 * @throws java.io.IOException
-	 * @throws java.io.UnsupportedEncodingException
-	 */
-	private String readIt(InputStream stream, int len) throws IOException, UnsupportedEncodingException {
-
-		int buffsize = 500;
-		StringBuilder out = new StringBuilder();
-
-		Reader reader = null;
-		reader = new InputStreamReader(stream, "UTF-8");
-		char[] buffer = new char[buffsize];
-
-		try {
-			for (;;) {
-				int rsz = reader.read(buffer, 0, buffer.length);
-				if (rsz < 0)
-					break;
-				out.append(buffer, 0, rsz);
-			}
-		} finally {
-			reader.close();
-		}
-
-		return out.toString();
-	}
-
-	@Override
-	public boolean onOptionsItemSelected(MenuItem item) {
-		// Handle action bar item clicks here. The action bar will
-		// automatically handle clicks on the Home/Up button, so long
-		// as you specify a parent activity in AndroidManifest.xml.
-		int id = item.getItemId();
-		if (id == R.id.action_settings) {
-			return true;
-		}
-		return super.onOptionsItemSelected(item);
-	}
-
-	private String[] parseTop10() throws ParserException {
-		final String DW_HOME_PAGE_URL = "http://bbs.nju.edu.cn/bbstop10";
-		ArrayList<String> pTitleList = new ArrayList<String>();
-		// 创建 html parser 对象，并指定要访问网页的 URL 和编码格式
-		Parser htmlParser = new Parser(DW_HOME_PAGE_URL);
-		htmlParser.setEncoding("UTF-8");
-		String postTitle = "";
-		// 获取指定的 div 节点，即 <div> 标签，并且该标签包含有属性 id 值为“tab1”
-		NodeList toptable = htmlParser.extractAllNodesThatMatch(new AndFilter(new NodeClassFilter(TableTag.class),
-				new HasAttributeFilter("width", "640")));
-
-		if (toptable != null && toptable.size() > 0) {
-			// 获取指定 div 标签的子节点中的 <li> 节点
-			NodeList itemTopList = toptable
-					.elementAt(0)
-					.getChildren()
-					.extractAllNodesThatMatch(
-							(new NodeClassFilter(TableRow.class)), true);
-
-			if (itemTopList != null && itemTopList.size() > 0) {
-				for (int i = 0; i < itemTopList.size()-1; ++i) {
-					// 在 <li> 节点的子节点中获取 Link 节点
-					NodeList linkItem = itemTopList.elementAt(i).getChildren()
-							.extractAllNodesThatMatch(new NodeClassFilter(TableColumn.class), true);
-					if (linkItem != null && linkItem.size() > 0) {
-						// 获取 Link 节点的 Text，即为要获取的推荐文章的题目文字
-						postTitle = ((LinkTag)((linkItem.elementAt(7)).getChildren().elementAt(0))).getLinkText();
-						System.out.println(postTitle);
-						pTitleList.add(postTitle);
-					}
-				}
-			}
-		}
-		String[] results=new String[pTitleList.size()];
-		pTitleList.toArray(results);
-		return results;
-	}
 }

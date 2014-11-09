@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="titles_array" translatable="false">
+        <item>Top10</item>
+        <item>D_Computer</item>
+    </string-array>
+</resources>
