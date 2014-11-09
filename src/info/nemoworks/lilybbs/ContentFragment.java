@@ -72,11 +72,11 @@ public class ContentFragment extends Fragment {
         @Override
         protected void onPostExecute(String[] results) {
             // Log.i(TAG, result);
-
-            ArrayAdapter<String> adapter = new ArrayAdapter<String>(
-                    getActivity(), android.R.layout.simple_list_item_1, results);
-            mListView.setAdapter(adapter);
-
+            if(results != null){
+                ArrayAdapter<String> adapter = new ArrayAdapter<String>(
+                        getActivity(), android.R.layout.simple_list_item_1, results);
+                mListView.setAdapter(adapter);
+            }
         }
     }
 
