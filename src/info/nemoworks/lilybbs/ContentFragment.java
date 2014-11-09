@@ -13,7 +13,6 @@ import org.htmlparser.tags.TableTag;
 import org.htmlparser.util.NodeList;
 import org.htmlparser.util.ParserException;
 
-import android.app.ActionBar;
 import android.app.Fragment;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -25,14 +24,14 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
 public class ContentFragment extends Fragment {
-    
+
     private int mType;
     private ListView mListView;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        
+
         mType = getArguments().getInt("FETCH_TYPE");
 
     }
@@ -40,11 +39,12 @@ public class ContentFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
             Bundle savedInstanceState) {
-        mListView = (ListView) inflater.inflate(
-                R.layout.fragment_content, container, false);
-        switch (mType){
+        mListView = (ListView) inflater.inflate(R.layout.fragment_content,
+                container, false);
+        switch (mType) {
         case 1:
-            new DownloadTask().execute("http://bbs.nju.edu.cn/vd75455/board?board=D_Computer");
+            new DownloadTask()
+                    .execute("http://bbs.nju.edu.cn/vd75455/board?board=D_Computer");
             break;
         default:
             new DownloadTask().execute("http://bbs.nju.edu.cn/bbstop10");
@@ -52,13 +52,8 @@ public class ContentFragment extends Fragment {
         return mListView;
     }
 
-    private ActionBar getActionBar() {
-        return getActivity().getActionBar();
-    }
-
     private class DownloadTask extends AsyncTask<String, Void, String[]> {
 
-        
         @Override
         protected String[] doInBackground(String... urls) {
             try {
@@ -77,12 +72,11 @@ public class ContentFragment extends Fragment {
         @Override
         protected void onPostExecute(String[] results) {
             // Log.i(TAG, result);
-            
+
             ArrayAdapter<String> adapter = new ArrayAdapter<String>(
-                    getActivity(),
-                    android.R.layout.simple_list_item_1, results);
+                    getActivity(), android.R.layout.simple_list_item_1, results);
             mListView.setAdapter(adapter);
-            
+
         }
     }
 
@@ -104,7 +98,7 @@ public class ContentFragment extends Fragment {
         Parser htmlParser = new Parser(url);
         htmlParser.setEncoding("UTF-8");
         String postTitle = "";
-        if (mType == 0) {//十大
+        if (mType == 0) {// 十大
             // 获取指定的 div 节点
             NodeList toptable = htmlParser
                     .extractAllNodesThatMatch(new AndFilter(
@@ -137,7 +131,7 @@ public class ContentFragment extends Fragment {
                     }
                 }
             }
-        } else if (mType == 1) {//计算机系版
+        } else if (mType == 1) {// 计算机系版
             // 获取指定的 div 节点
             NodeList toptable = htmlParser
                     .extractAllNodesThatMatch(new AndFilter(
@@ -171,7 +165,7 @@ public class ContentFragment extends Fragment {
                 }
             }
         }
-        String[] results=new String[pTitleList.size()];
+        String[] results = new String[pTitleList.size()];
         pTitleList.toArray(results);
         return results;
     }
