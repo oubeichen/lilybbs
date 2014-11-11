@@ -14,12 +14,15 @@ import org.htmlparser.util.NodeList;
 import org.htmlparser.util.ParserException;
 
 import android.app.Fragment;
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
@@ -27,6 +30,8 @@ public class ContentFragment extends Fragment {
 
     private int mType;
     private ListView mListView;
+    private ArrayList<String> pTitleList = new ArrayList<String>();
+    private ArrayList<String> pHrefList = new ArrayList<String>();
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -49,6 +54,23 @@ public class ContentFragment extends Fragment {
         default:
             new DownloadTask().execute("http://bbs.nju.edu.cn/bbstop10");
         }
+        
+        mListView.setOnItemClickListener(new OnItemClickListener(){
+
+            @Override
+            public void onItemClick(AdapterView<?> l, View v, int position, long id) {
+                // TODO Auto-generated method stub
+                // System.out.println(position);
+                String url = pHrefList.get(position);
+                // start a new activity to show the content of this
+                Intent it = new Intent(getActivity(), ThreadActivity.class);
+                Bundle bundle = new Bundle();
+                bundle.putString("URL_LABEL", url);
+                it.putExtras(bundle); // it.putExtra(“test”, "shuju”);
+                startActivity(it); // startActivityForResult(it,REQUEST_CODE);
+            }
+        });
+        
         return mListView;
     }
 
@@ -93,11 +115,10 @@ public class ContentFragment extends Fragment {
     }
 
     private String[] parseContent(String url) throws ParserException {
-        ArrayList<String> pTitleList = new ArrayList<String>();
+
         // 创建 html parser 对象，并指定要访问网页的 URL 和编码格式
         Parser htmlParser = new Parser(url);
         htmlParser.setEncoding("UTF-8");
-        String postTitle = "";
         if (mType == 0) {// 十大
             // 获取指定的 div 节点
             NodeList toptable = htmlParser
@@ -124,9 +145,10 @@ public class ContentFragment extends Fragment {
                                         true);
                         if (linkItem != null && linkItem.size() > 0) {
                             // 获取 Link 节点的 Text，即为要获取的推荐文章的题目文字
-                            postTitle = ((LinkTag) ((linkItem.elementAt(7))
-                                    .getChildren().elementAt(0))).getLinkText();
-                            pTitleList.add(postTitle);
+                            LinkTag linktag = ((LinkTag) ((linkItem.elementAt(7))
+                                    .getChildren().elementAt(0)));
+                            pTitleList.add(linktag.getLinkText());
+                            pHrefList.add(linktag.getLink());
                         }
                     }
                 }
@@ -157,9 +179,10 @@ public class ContentFragment extends Fragment {
                                         true);
                         if (linkItem != null && linkItem.size() > 0) {
                             // 获取 Link 节点的 Text，即为要获取的推荐文章的题目文字
-                            postTitle = ((LinkTag) ((linkItem.elementAt(5))
-                                    .getChildren().elementAt(0))).getLinkText();
-                            pTitleList.add(postTitle);
+                            LinkTag linktag = ((LinkTag) ((linkItem.elementAt(5))
+                                    .getChildren().elementAt(0)));
+                            pTitleList.add(linktag.getLinkText());
+                            pHrefList.add(linktag.getLink());
                         }
                     }
                 }
